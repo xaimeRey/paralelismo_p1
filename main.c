@@ -39,9 +39,8 @@ int main(int argc, char *argv[])
 
         // CALCULOS
         h = 1.0 / (double)n;
-        salto = ceil((double)n / (double)numprocs);
 
-        for (int i = rank; i < n; i += (int)salto)
+        for (int i = rank; i < n; i += numprocs)
         {
             x = h * ((double)i - 0.5);
             sum += 4.0 / (1.0 + x * x);
