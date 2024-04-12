@@ -17,19 +17,40 @@ int main(int argc, char *argv[])
 
     while (!done)
     {
+        sum = 0;
+        sumTotal = 0;
+
+        // COMUNICACION
         if (rank == 0)
         {
             printf("Enter the number of intervals: (0 quits) \n");
             scanf("%d", &n);
-            h = 1.0 / (double)n;
-            sumTotal = 0;
 
-            // MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
             for (int i = 1; i < numprocs; i++)
             {
                 MPI_Send(&n, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
             }
+        }
+        else
+            MPI_Recv(&n, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
+        if (n == 0)
+            break;
+
+        // CALCULOS
+        h = 1.0 / (double)n;
+        salto = ceil((double)n / (double)numprocs);
+
+        for (int i = rank; i < n; i += (int)salto)
+        {
+            x = h * ((double)i - 0.5);
+            sum += 4.0 / (1.0 + x * x);
+        }
+
+        // COMUNICACION
+        if (rank == 0)
+        {
+            sumTotal += sum;
             for (int i = 0; i < numprocs - 1; i++)
             {
                 MPI_Recv(&recibido, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
@@ -39,20 +60,7 @@ int main(int argc, char *argv[])
             printf("pi is approximately %.16f, Error is %.16f\n", pi, fabs(pi - PI25DT));
         }
         else
-        {
-            sum = 0;
-            MPI_Recv(&n, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
-            h = 1.0 / (double)n;
-            salto = ceil(n / numprocs);
-
-            for (int i = rank; i <= n; i += (int)salto)
-            {
-                x = h * ((double)i - 0.5);
-                sum += 4.0 / (1.0 + x * x);
-            }
             MPI_Send(&sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-        }
-    }
-
+    }                   
     MPI_Finalize();
 }
